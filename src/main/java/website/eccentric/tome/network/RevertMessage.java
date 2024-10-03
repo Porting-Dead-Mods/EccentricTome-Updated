@@ -18,7 +18,6 @@ public class RevertMessage {
         buffer.writeByte(0);
     }
 
-    @SuppressWarnings("resource")
     public static void handle(final RevertMessage message, final Supplier<NetworkEvent.Context> context) {
         EccentricTome.LOGGER.debug("Received revert message.");
 

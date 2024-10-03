@@ -1,13 +1,16 @@
 package website.eccentric.tome;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
+import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
@@ -69,6 +72,16 @@ public class AttachmentRecipe extends CustomRecipe {
     }
 
     @Override
+    public boolean matches(CraftingInput input, Level level) {
+        return false;
+    }
+
+    @Override
+    public ItemStack assemble(CraftingInput input, HolderLookup.Provider registries) {
+        return null;
+    }
+
+    @Override
     public boolean canCraftInDimensions(int width, int height) {
         return width * height >= 2;
     }
@@ -85,7 +98,7 @@ public class AttachmentRecipe extends CustomRecipe {
         if (Configuration.EXCLUDE.get().contains(mod))
             return false;
 
-        var location = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        var location = BuiltInRegistries.ITEM.getKey(stack.getItem());
         var locationString = location.toString();
         var locationDamage = locationString + ":" + stack.getDamageValue();
 
@@ -98,8 +111,8 @@ public class AttachmentRecipe extends CustomRecipe {
             return true;
 
         for (var tag : Configuration.INCLUDE_ITEM_TAGS.get()) {
-            var itemTag = ForgeRegistries.ITEMS.tags().getTag(ItemTags.create(new ResourceLocation(tag)));
-            if (itemTag.contains(stack.getItem()))
+            var itemTag = BuiltInRegistries.ITEM.getTag(ItemTags.create(ResourceLocation.fromNamespaceAndPath(EccentricTome.ID, tag)));
+            if (itemTag.get().contains(stack.getItem().builtInRegistryHolder()))
                 return true;
         }
 

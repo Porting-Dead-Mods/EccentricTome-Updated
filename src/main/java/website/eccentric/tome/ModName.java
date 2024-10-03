@@ -3,11 +3,14 @@ package website.eccentric.tome;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.LoadingModList;
 
 public class ModName {
     private static final Map<String, String> modNames = new HashMap<>();
@@ -15,13 +18,13 @@ public class ModName {
     public static final String PATCHOULI = "patchouli";
 
     static {
-        for (var mod : ModList.get().getMods()) {
+        for (var mod : LoadingModList.get().getMods()) {
             modNames.put(mod.getModId(), mod.getDisplayName());
         }
     }
 
     public static String from(BlockState state) {
-        return orAlias(ForgeRegistries.BLOCKS.getKey(state.getBlock()).getNamespace());
+        return orAlias(BuiltInRegistries.BLOCK.getKey(state.getBlock()).getNamespace());
     }
 
     public static String from(ItemStack stack) {

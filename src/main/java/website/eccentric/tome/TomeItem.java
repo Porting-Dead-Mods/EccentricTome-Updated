@@ -17,7 +17,6 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.common.MinecraftForge;
-import website.eccentric.tome.events.OpenTomeEvent;
 
 public class TomeItem extends Item {
     public TomeItem() {

@@ -1,5 +1,20 @@
 package website.eccentric.tome;
 
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModLoadingContext;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.registries.DeferredRegister;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -8,24 +23,7 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
-import net.minecraftforge.event.entity.item.ItemTossEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.network.simple.SimpleChannel;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
 import website.eccentric.tome.client.RenderGuiOverlayHandler;
-import website.eccentric.tome.client.TomeHandler;
 import website.eccentric.tome.network.RevertMessage;
 import website.eccentric.tome.network.TomeChannel;
 
@@ -34,18 +32,17 @@ public class EccentricTome {
     public static final String ID = "eccentrictome";
     public static final Logger LOGGER = LogManager.getLogger(ID);
 
-    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, ID);
+    public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(EccentricTome.ID);
     public static final DeferredRegister<RecipeSerializer<?>> RECIPES = DeferredRegister
-            .create(ForgeRegistries.RECIPE_SERIALIZERS, ID);
+            .create(BuiltInRegistries.RECIPE_SERIALIZER, ID);
 
-    public static final RegistryObject<RecipeSerializer<?>> ATTACHMENT = RECIPES.register("attachment",
+    public static final DeferredRegister<RecipeSerializer<?>> ATTACHMENT = RECIPES.register("attachment",
             () -> new SimpleCraftingRecipeSerializer<>(AttachmentRecipe::new));
-    public static final RegistryObject<Item> TOME = ITEMS.register("tome", TomeItem::new);
+    public static final DeferredItem<Item> TOME = ITEMS.register("tome", TomeItem::new);
 
     public static SimpleChannel CHANNEL;
 
-    public EccentricTome() {
-        var modEvent = FMLJavaModLoadingContext.get().getModEventBus();
+    public EccentricTome(IEventBus modEvent) {
 
         ITEMS.register(modEvent);
         RECIPES.register(modEvent);
@@ -54,18 +51,16 @@ public class EccentricTome {
         modEvent.addListener(this::onCommonSetup);
         modEvent.addListener(this::onModConfig);
         modEvent.addListener(this::onBuildCreativeModeTabContents);
+        ModLoadingContext.get().getActiveContainer().registerConfig(ModConfig.Type.COMMON, Configuration.SPEC);
 
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Configuration.SPEC);
-
-        var minecraftEvent = MinecraftForge.EVENT_BUS;
+        var minecraftEvent = NeoForge.EVENT_BUS;
         minecraftEvent.addListener(EventPriority.LOW, this::onItemDropped);
     }
 
     private void onClientSetup(final FMLClientSetupEvent event) {
-        var minecraftEvent = MinecraftForge.EVENT_BUS;
+        var minecraftEvent = NeoForge.EVENT_BUS;
         minecraftEvent.addListener(this::onLeftClickEmpty);
         minecraftEvent.addListener(EventPriority.LOW, RenderGuiOverlayHandler::onRender);
-        minecraftEvent.addListener(TomeHandler::onOpenTome);
     }
 
     private void onCommonSetup(final FMLCommonSetupEvent event) {

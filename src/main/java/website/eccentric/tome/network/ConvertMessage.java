@@ -1,10 +1,7 @@
 package website.eccentric.tome.network;
 
-import java.util.function.Supplier;
-
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent;
 import website.eccentric.tome.EccentricTome;
 import website.eccentric.tome.Tome;
 

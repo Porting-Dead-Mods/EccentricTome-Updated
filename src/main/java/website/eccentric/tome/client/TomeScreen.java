@@ -10,6 +10,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.neoforged.neoforge.network.PacketDistributor;
 import website.eccentric.tome.EccentricTome;
 import website.eccentric.tome.Tome;
 import website.eccentric.tome.network.ConvertMessage;
@@ -31,7 +32,7 @@ public class TomeScreen extends Screen {
         if (button != LEFT_CLICK || book == null)
             return super.mouseClicked(x, y, button);
 
-        EccentricTome.CHANNEL.sendToServer(new ConvertMessage(book));
+        PacketDistributor.sendToServer(new ConvertMessage(book));
 
         this.onClose();
         return true;

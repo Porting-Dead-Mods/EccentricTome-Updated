@@ -6,23 +6,24 @@ import java.util.List;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class Configuration {
-    public static final ForgeConfigSpec.BooleanValue ALL_ITEMS;
-    public static final ForgeConfigSpec.BooleanValue DISABLE_OVERLAY;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ITEMS;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> NAMES;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ALIASES;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> EXCLUDE;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> EXCLUDE_ITEMS;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> INCLUDE_ITEM_TAGS;
+    public static final ModConfigSpec.BooleanValue ALL_ITEMS;
+    public static final ModConfigSpec.BooleanValue DISABLE_OVERLAY;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> ITEMS;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> NAMES;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> ALIASES;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> EXCLUDE;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> EXCLUDE_ITEMS;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> INCLUDE_ITEM_TAGS;
 
     public static final HashMap<String, String> ALIAS_MAP = new HashMap<>();
 
-    public static final ForgeConfigSpec SPEC;
+    public static final ModConfigSpec SPEC;
 
     static {
-        var BUILDER = new ForgeConfigSpec.Builder()
+        var BUILDER = new ModConfigSpec.Builder()
                 .comment("Common configuration settings")
                 .push("common");
 
@@ -173,7 +174,7 @@ public class Configuration {
         }
 
         public static boolean isStringResource(Object object) {
-            return isString(object) && ResourceLocation.isValidResourceLocation((String) object);
+            return isString(object) && ResourceLocation.isAllowedInResourceLocation((Character) object);
         }
     }
 }
