@@ -2,8 +2,12 @@ package website.eccentric.tome;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
@@ -42,8 +46,7 @@ public class EccentricTome {
             () -> new SimpleCraftingRecipeSerializer<>(AttachmentRecipe::new));
     public static final DeferredItem<Item> TOME = ITEMS.register("tome", TomeItem::new);
 
-    public EccentricTome(IEventBus modEvent) {
-
+    public EccentricTome(IEventBus modEvent, ModContainer container) {
         ITEMS.register(modEvent);
         RECIPES.register(modEvent);
         EccentricDataComponents.COMPONENTS.register(modEvent);
@@ -52,10 +55,12 @@ public class EccentricTome {
         modEvent.addListener(this::onModConfig);
         modEvent.addListener(this::onBuildCreativeModeTabContents);
         modEvent.addListener(this::modifyDefaultComponents);
-        ModLoadingContext.get().getActiveContainer().registerConfig(ModConfig.Type.COMMON, EccentricConfig.SPEC);
+        container.registerConfig(ModConfig.Type.COMMON, EccentricConfig.SPEC);
 
         var minecraftEvent = NeoForge.EVENT_BUS;
         minecraftEvent.addListener(EventPriority.LOW, this::onItemDropped);
+        minecraftEvent.addListener(this::onRightClickTomeItem);
+        minecraftEvent.addListener(this::onRightClickTomeOnBlock);
     }
 
     private void onClientSetup(final FMLClientSetupEvent event) {
@@ -76,6 +81,32 @@ public class EccentricTome {
         if (TomeUtils.isTome(stack) && !(stack.getItem() instanceof TomeItem)) {
             PacketDistributor.sendToServer(new RevertPayload());
         }
+    }
+
+    private void onRightClickTomeItem(PlayerInteractEvent.RightClickItem event) {
+        event.setCanceled(onRightClickTome(event));
+    }
+
+    private void onRightClickTomeOnBlock(PlayerInteractEvent.RightClickBlock event) {
+        event.setCanceled(onRightClickTome(event));
+    }
+
+    private static boolean onRightClickTome(PlayerInteractEvent event) {
+        var stack = event.getItemStack();
+        if (!(stack.getItem() instanceof TomeItem) && stack.getOrDefault(EccentricDataComponents.IS_TOME, false)) {
+            ItemStack prevStack = stack.copy();
+            Player player = event.getEntity();
+            InteractionHand hand = event.getHand();
+            stack.use(event.getLevel(), player, hand);
+            if (player.getMainHandItem().isEmpty()) {
+                ModListComponent component = TomeUtils.remove(prevStack, stack);
+                ItemStack newStack = EccentricTome.TOME.toStack();
+                newStack.set(EccentricDataComponents.MOD_LIST, component);
+                player.setItemInHand(hand, newStack);
+            }
+            return true;
+        }
+        return false;
     }
 
     private void onItemDropped(ItemTossEvent event) {

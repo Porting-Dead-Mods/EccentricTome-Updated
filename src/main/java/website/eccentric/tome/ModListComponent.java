@@ -4,12 +4,10 @@ import com.mojang.serialization.Codec;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public record ModListComponent(Map<String, List<ItemStack>> modList) {
     public static final ModListComponent EMPTY = new ModListComponent(new HashMap<>());
@@ -27,4 +25,12 @@ public record ModListComponent(Map<String, List<ItemStack>> modList) {
             ModListComponent::modList,
             ModListComponent::new
     );
+
+    public ModListComponent copy() {
+        Map<String, List<ItemStack>> map = new HashMap<>();
+        for (Map.Entry<String, List<ItemStack>> entry : this.modList.entrySet()) {
+            map.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+        }
+        return new ModListComponent(map);
+    }
 }

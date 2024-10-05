@@ -7,7 +7,7 @@ import website.eccentric.tome.client.TomeScreen;
 public class TomeClientUtils {
     public static void openTome(ItemStack stack) {
         if (stack.getItem() instanceof TomeItem tome) {
-            Minecraft.getInstance().setScreen(new TomeScreen(tome.getDefaultInstance()));
+            Minecraft.getInstance().setScreen(new TomeScreen(Minecraft.getInstance().player.getMainHandItem()));
         }
     }
 }

@@ -26,11 +26,12 @@ public class EccentricConfig {
                 .define("disable_overlay", false);
 
         ITEMS = BUILDER
-                .comment("Whitelisted items")
-                .defineListAllowEmpty(
+                .comment("Whitelisted items").defineListAllowEmpty(
                         List.of("items"),
                         () -> List.of(
-                                "minecraft:snowball",
+                                "paganbless:pagan_guide",
+                                "nautec:nautec_guide",
+                                "immersiveengineering:manual",
                                 "tconstruct:materials_and_you",
                                 "tconstruct:puny_smelting",
                                 "tconstruct:mighty_smelting",
@@ -48,7 +49,9 @@ public class EccentricConfig {
                                 "rootsclassic:runic_tablet",
                                 "enigmaticlegacy:the_acknowledgment",
                                 "ad_astra:astrodux"),
-                        Validator::isStringResource);
+                        () -> "",
+                        Validator::isStringResource
+                );
 
         ALIASES = BUILDER
                 .comment("Mod aliases")
@@ -69,7 +72,8 @@ public class EccentricConfig {
                                 "deepresonance=rftoolsbase",
                                 "xnet=rftoolsbase",
                                 "mysticalaggraditions=mysticalagriculture"),
-                        Validator::isString);
+                        () -> "",
+                        Validator::isStringAlias);
 
         BUILDER.pop();
 
@@ -82,7 +86,13 @@ public class EccentricConfig {
         }
 
         public static boolean isStringResource(Object object) {
-            return isString(object) && ResourceLocation.isAllowedInResourceLocation(object instanceof Character character ? character : object.toString().charAt(0));
+            String pattern = "^.+:.+$";
+            return isString(object) && ((String) object).matches(pattern);
+        }
+
+        public static boolean isStringAlias(Object object) {
+            String pattern = "^.+=.+$";
+            return isString(object) && ((String) object).matches(pattern);
         }
     }
 }

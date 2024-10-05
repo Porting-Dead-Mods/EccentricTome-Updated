@@ -1,6 +1,7 @@
 package website.eccentric.tome;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,6 +14,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.neoforged.fml.ModList;
 
 public class TomeUtils {
@@ -44,19 +46,45 @@ public class TomeUtils {
     }
 
     public static ItemStack attach(ItemStack tome, ItemStack book) {
+        EccentricTome.LOGGER.debug("Attaching");
         var mod = ModName.from(book);
         var modsBooks = getModsBooks(tome);
 
-        var books = modsBooks.modList().getOrDefault(mod, new ArrayList<ItemStack>());
-        books.add(book.copyWithCount(1));
-        modsBooks.modList().put(mod, books);
+        Map<String, List<ItemStack>> modListCopy = modsBooks.copy().modList();
 
-        setModsBooks(tome, modsBooks);
+        var books = modListCopy.getOrDefault(mod, new ArrayList<>());
+
+        ItemStack itemStack = book.copyWithCount(1);
+        if (books.contains(itemStack)) return ItemStack.EMPTY;
+
+        for (ItemStack book1 : books) {
+            if (ItemStack.isSameItemSameComponents(book1, book)) {
+                return ItemStack.EMPTY;
+            }
+        }
+
+        books.add(itemStack);
+
+        modListCopy.put(mod, books);
+
+        setModsBooks(tome, new ModListComponent(modListCopy));
         return tome;
     }
 
+    public static ModListComponent remove(ItemStack tome, ItemStack bookToRemove) {
+        ModListComponent modListComponent = getModsBooks(tome).copy();
+        Map<String, List<ItemStack>> modList = modListComponent.modList();
+        String modId = bookToRemove.getItem().getCreatorModId(bookToRemove);
+        List<ItemStack> itemStacks = modList.get(modId);
+        itemStacks.remove(bookToRemove);
+        if (itemStacks.isEmpty()) {
+            modList.remove(modId);
+        }
+        return modListComponent;
+    }
+
     public static ModListComponent getModsBooks(ItemStack stack) {
-        return stack.getOrDefault(EccentricDataComponents.MOD_LIST, ModListComponent.EMPTY);
+        return stack.get(EccentricDataComponents.MOD_LIST);
     }
 
     public static void setModsBooks(ItemStack stack, ModListComponent modsBooks) {
@@ -89,7 +117,7 @@ public class TomeUtils {
     }
 
     private static void copyMods(ItemStack source, ItemStack target) {
-        target.set(EccentricDataComponents.MOD_LIST, source.get(EccentricDataComponents.MOD_LIST));
+        target.set(EccentricDataComponents.MOD_LIST, source.get(EccentricDataComponents.MOD_LIST).copy());
     }
 
     private static void clear(ItemStack stack) {

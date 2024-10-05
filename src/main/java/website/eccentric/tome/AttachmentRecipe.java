@@ -83,7 +83,7 @@ public class AttachmentRecipe extends CustomRecipe {
         var locationDamage = locationString + ":" + stack.getDamageValue();
 
         var items = EccentricConfig.ITEMS.get();
-        return items.contains(locationString) || items.contains(locationDamage);
+        return location.getNamespace().equals(ModName.PATCHOULI) || location.getNamespace().equals("modonomicon") ||  items.contains(locationString) || items.contains(locationDamage);
     }
 
     @Override

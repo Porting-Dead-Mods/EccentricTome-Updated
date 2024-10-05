@@ -11,6 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.network.PacketDistributor;
+import website.eccentric.tome.EccentricTome;
 import website.eccentric.tome.TomeUtils;
 import website.eccentric.tome.network.ConvertPayload;
 
