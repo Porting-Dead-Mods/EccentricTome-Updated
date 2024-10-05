@@ -2,19 +2,27 @@ package website.eccentric.tome.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
+import net.minecraft.client.gui.LayeredDraw;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import org.lwjgl.opengl.GL11;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import website.eccentric.tome.Tome;
+import website.eccentric.tome.EccentricTome;
+import website.eccentric.tome.TomeUtils;
 import website.eccentric.tome.TomeItem;
 import website.eccentric.tome.ModName;
 
+@EventBusSubscriber(modid = EccentricTome.ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public class RenderGuiOverlayHandler {
-	public static void onRender(RenderGuiOverlayEvent.Post event) {
+	public static final LayeredDraw.Layer LAYER = ((guiGraphics, deltaTracker) -> {
+
 		var minecraft = Minecraft.getInstance();
 
 		var player = minecraft.player;
@@ -31,7 +39,7 @@ public class RenderGuiOverlayHandler {
 
 		var blockHit = (BlockHitResult) hit;
 
-		var hand = Tome.inHand(minecraft.player);
+		var hand = TomeUtils.inHand(minecraft.player);
 		if (hand == null)
 			return;
 
@@ -44,7 +52,7 @@ public class RenderGuiOverlayHandler {
 			return;
 
 		var mod = ModName.from(state);
-		var modsBooks = Tome.getModsBooks(tome);
+		var modsBooks = TomeUtils.getModsBooks(tome).modList();
 		if (!modsBooks.containsKey(mod))
 			return;
 
@@ -59,13 +67,16 @@ public class RenderGuiOverlayHandler {
 		RenderSystem.enableBlend();
 		RenderSystem.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 
-		var window = event.getWindow();
-		var x = window.getGuiScaledWidth() / 2 - 17;
-		var y = window.getGuiScaledHeight() / 2 + 2;
+		var x = guiGraphics.guiWidth() / 2 - 17;
+		var y = guiGraphics.guiHeight() / 2 + 2;
 
-		var gui = event.getGuiGraphics();
-		gui.renderItem(book, x, y);
-		gui.drawString(minecraft.font, hoverName, x + 20, y + 4, 0xFFFFFFFF);
-		gui.drawString(minecraft.font, ChatFormatting.GRAY + convert, x + 25, y + 14, 0xFFFFFFFF);
+		guiGraphics.renderItem(book, x, y);
+		guiGraphics.drawString(minecraft.font, hoverName, x + 20, y + 4, 0xFFFFFFFF);
+		guiGraphics.drawString(minecraft.font, ChatFormatting.GRAY + convert, x + 25, y + 14, 0xFFFFFFFF);
+	});
+
+	@SubscribeEvent
+	public static void registerLayers(RegisterGuiLayersEvent event) {
+		event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(EccentricTome.ID, "tome_overlay"), LAYER);
 	}
 }

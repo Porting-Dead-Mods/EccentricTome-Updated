@@ -2,11 +2,9 @@ package website.eccentric.tome;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
-import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
@@ -14,19 +12,19 @@ import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.registries.ForgeRegistries;
 
 public class AttachmentRecipe extends CustomRecipe {
-    public AttachmentRecipe(ResourceLocation location, CraftingBookCategory category) {
-        super(location, category);
+    public AttachmentRecipe(CraftingBookCategory category) {
+        super(category);
     }
 
     @Override
-    public boolean matches(CraftingContainer crafting, Level level) {
+    public boolean matches(CraftingInput crafting, Level level) {
+        EccentricTome.LOGGER.debug("Matching");
         var foundTome = false;
         var foundTarget = false;
 
-        for (var i = 0; i < crafting.getContainerSize(); i++) {
+        for (var i = 0; i < crafting.size(); i++) {
             var stack = crafting.getItem(i);
             if (stack.isEmpty())
                 continue;
@@ -51,11 +49,11 @@ public class AttachmentRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingContainer crafting, RegistryAccess access) {
+    public ItemStack assemble(CraftingInput crafting, HolderLookup.Provider access) {
         var tome = ItemStack.EMPTY;
         var target = ItemStack.EMPTY;
 
-        for (var i = 0; i < crafting.getContainerSize(); i++) {
+        for (var i = 0; i < crafting.size(); i++) {
             var stack = crafting.getItem(i);
             if (stack.isEmpty())
                 continue;
@@ -68,17 +66,7 @@ public class AttachmentRecipe extends CustomRecipe {
 
         tome = tome.copy();
 
-        return Tome.attach(tome, target);
-    }
-
-    @Override
-    public boolean matches(CraftingInput input, Level level) {
-        return false;
-    }
-
-    @Override
-    public ItemStack assemble(CraftingInput input, HolderLookup.Provider registries) {
-        return null;
+        return TomeUtils.attach(tome, target);
     }
 
     @Override
@@ -90,49 +78,22 @@ public class AttachmentRecipe extends CustomRecipe {
         if (stack.isEmpty())
             return false;
 
-        var mod = ModName.from(stack);
-
-        if (Configuration.ALL_ITEMS.get())
-            return true;
-
-        if (Configuration.EXCLUDE.get().contains(mod))
-            return false;
-
         var location = BuiltInRegistries.ITEM.getKey(stack.getItem());
         var locationString = location.toString();
         var locationDamage = locationString + ":" + stack.getDamageValue();
 
-        var excludeItems = Configuration.EXCLUDE_ITEMS.get();
-        if (excludeItems.contains(locationString) || excludeItems.contains(locationDamage))
-            return false;
-
-        var items = Configuration.ITEMS.get();
-        if (items.contains(locationString) || items.contains(locationDamage))
-            return true;
-
-        for (var tag : Configuration.INCLUDE_ITEM_TAGS.get()) {
-            var itemTag = BuiltInRegistries.ITEM.getTag(ItemTags.create(ResourceLocation.fromNamespaceAndPath(EccentricTome.ID, tag)));
-            if (itemTag.get().contains(stack.getItem().builtInRegistryHolder()))
-                return true;
-        }
-
-        var path = location.getPath();
-        for (var name : Configuration.NAMES.get()) {
-            if (path.contains(name))
-                return true;
-        }
-
-        return false;
+        var items = EccentricConfig.ITEMS.get();
+        return items.contains(locationString) || items.contains(locationDamage);
     }
 
     @Override
-    public ItemStack getResultItem(RegistryAccess access) {
+    public ItemStack getResultItem(HolderLookup.Provider registries) {
         return ItemStack.EMPTY;
     }
 
     @Override
-    public NonNullList<ItemStack> getRemainingItems(CraftingContainer crafting) {
-        return NonNullList.withSize(crafting.getContainerSize(), ItemStack.EMPTY);
+    public NonNullList<ItemStack> getRemainingItems(CraftingInput crafting) {
+        return NonNullList.withSize(crafting.size(), ItemStack.EMPTY);
     }
 
     @Override

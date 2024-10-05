@@ -11,9 +11,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.network.PacketDistributor;
-import website.eccentric.tome.EccentricTome;
-import website.eccentric.tome.Tome;
-import website.eccentric.tome.network.ConvertMessage;
+import website.eccentric.tome.TomeUtils;
+import website.eccentric.tome.network.ConvertPayload;
 
 public class TomeScreen extends Screen {
     private static final int LEFT_CLICK = 0;
@@ -32,7 +31,7 @@ public class TomeScreen extends Screen {
         if (button != LEFT_CLICK || book == null)
             return super.mouseClicked(x, y, button);
 
-        PacketDistributor.sendToServer(new ConvertMessage(book));
+        PacketDistributor.sendToServer(new ConvertPayload(book));
 
         this.onClose();
         return true;
@@ -65,9 +64,9 @@ public class TomeScreen extends Screen {
 
         super.render(gui, mouseX, mouseY, ticks);
 
-        var books = Tome.getModsBooks(tome).values().stream()
+        var books = TomeUtils.getModsBooks(tome).modList().values().stream()
                 .flatMap(Collection::stream)
-                .collect(Collectors.toList());
+                .toList();
 
         var window = minecraft.getWindow();
         var booksPerRow = 6;

@@ -16,11 +16,13 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.common.MinecraftForge;
 
 public class TomeItem extends Item {
     public TomeItem() {
-        super(new Properties().stacksTo(1));
+        super(new Properties().stacksTo(1)
+                .component(EccentricDataComponents.MOD_LIST, ModListComponent.EMPTY)
+                .component(EccentricDataComponents.IS_TOME, false)
+                .component(EccentricDataComponents.VERSION, 0));
     }
 
     @Override
@@ -33,15 +35,18 @@ public class TomeItem extends Item {
         var position = context.getClickedPos();
         var tome = context.getItemInHand();
         var mod = ModName.from(context.getLevel().getBlockState(position));
-        var modsBooks = Tome.getModsBooks(tome);
+        var modsBooks = TomeUtils.getModsBooks(tome).modList();
 
         if (!player.isShiftKeyDown() || !modsBooks.containsKey(mod))
             return InteractionResult.PASS;
 
         var books = modsBooks.get(mod);
-        var book = books.get(books.size() - 1);
+        if (!books.isEmpty()) {
+            var book = books.getLast();
 
-        player.setItemInHand(hand, Tome.convert(tome, book));
+            player.setItemInHand(hand, TomeUtils.convert(tome, book));
+            return InteractionResult.FAIL;
+        }
 
         return InteractionResult.SUCCESS;
     }
@@ -50,15 +55,16 @@ public class TomeItem extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         var tome = player.getItemInHand(hand);
 
-        if (level.isClientSide)
-            MinecraftForge.EVENT_BUS.post(new OpenTomeEvent(tome));
+        if (level.isClientSide) {
+            TomeClientUtils.openTome(tome);
+        }
 
         return InteractionResultHolder.sidedSuccess(tome, level.isClientSide);
     }
 
     @Override
-    public void appendHoverText(ItemStack tome, @Nullable Level level, List<Component> tooltip, TooltipFlag advanced) {
-        var modsBooks = Tome.getModsBooks(tome);
+    public void appendHoverText(ItemStack tome, @Nullable TooltipContext context, List<Component> tooltip, TooltipFlag advanced) {
+        var modsBooks = TomeUtils.getModsBooks(tome).modList();
 
         for (var mod : modsBooks.keySet()) {
             tooltip.add(Component.literal(ModName.name(mod)));
