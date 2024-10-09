@@ -5,10 +5,10 @@
       "item": "minecraft:book"
     },
     {
-      "tag": "forge:bookshelves"
+      "tag": "c:bookshelves"
     }
   ],
   "result": {
-    "item": "eccentrictome:tome"
+    "id": "eccentrictome:tome"
   }
 }

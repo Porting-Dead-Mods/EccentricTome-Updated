@@ -5,11 +5,16 @@ import java.util.stream.Collectors;
 
 import com.mojang.blaze3d.platform.InputConstants;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.color.item.ItemColor;
+import net.minecraft.client.color.item.ItemColors;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import website.eccentric.tome.EccentricTome;
 import website.eccentric.tome.TomeUtils;
@@ -92,7 +97,6 @@ public class TomeScreen extends Screen {
             if (mouseX > stackX && mouseY > stackY && mouseX <= (stackX + 16) && mouseY <= (stackY + 16)) {
                 this.book = book;
             }
-
             gui.renderItem(book, stackX, stackY);
             gui.renderItemDecorations(font, book, mouseX, mouseY);
             index++;
@@ -101,5 +105,9 @@ public class TomeScreen extends Screen {
         if (this.book != null) {
             gui.renderComponentTooltip(this.font, getTooltipFromItem(minecraft, this.book), mouseX, mouseY);
         }
+    }
+
+    @Override
+    public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
     }
 }
