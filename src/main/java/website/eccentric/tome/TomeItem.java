@@ -16,6 +16,9 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.network.PacketDistributor;
+import org.jetbrains.annotations.NotNull;
+import website.eccentric.tome.network.ConvertPayload;
 
 public class TomeItem extends Item {
     public TomeItem() {
@@ -26,7 +29,7 @@ public class TomeItem extends Item {
     }
 
     @Override
-    public InteractionResult useOn(UseOnContext context) {
+    public @NotNull InteractionResult useOn(UseOnContext context) {
         var player = context.getPlayer();
         if (player == null)
             return InteractionResult.PASS;
@@ -40,11 +43,11 @@ public class TomeItem extends Item {
         if (!player.isShiftKeyDown() || !modsBooks.containsKey(mod))
             return InteractionResult.PASS;
 
-        var books = modsBooks.get(mod);
-        if (!books.isEmpty()) {
+        List<ItemStack> books = modsBooks.get(mod);
+        if (!books.isEmpty() && context.getLevel().isClientSide) {
             var book = books.getLast();
 
-            player.setItemInHand(hand, TomeUtils.convert(tome, book));
+            PacketDistributor.sendToServer(new ConvertPayload(book));
             return InteractionResult.FAIL;
         }
 

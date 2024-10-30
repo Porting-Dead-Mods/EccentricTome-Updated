@@ -21,10 +21,11 @@ public class TomeUtils {
     public static ItemStack convert(ItemStack tome, ItemStack book) {
         var modsBooks = getModsBooks(tome);
         var mod = ModName.from(book);
-        var books = modsBooks.modList().get(mod);
+        var books = modsBooks.copy().modList().get(mod);
         var registry = BuiltInRegistries.ITEM.getKey(book.getItem());
         books.removeIf(b -> BuiltInRegistries.ITEM.getKey(b.getItem()).equals(registry));
 
+        EccentricTome.LOGGER.debug("MODSBOOKS: {}", modsBooks);
         setModsBooks(book, modsBooks);
         //Migration.setVersion(book);
 

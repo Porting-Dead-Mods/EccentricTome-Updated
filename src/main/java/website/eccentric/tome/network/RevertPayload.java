@@ -33,7 +33,7 @@ public record RevertPayload() implements CustomPacketPayload {
             if (hand != null) {
                 var stack = player.getItemInHand(hand);
                 var tome = TomeUtils.revert(stack);
-                player.setItemInHand(hand, TomeUtils.attach(tome, stack));
+                player.setItemInHand(hand, tome);
 
                 if (direction.getReceptionSide().isClient()) {
                     Minecraft.getInstance().gameRenderer.itemInHandRenderer.itemUsed(hand);
