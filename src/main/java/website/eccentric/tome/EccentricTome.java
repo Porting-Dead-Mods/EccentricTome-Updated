@@ -70,7 +70,7 @@ public class EccentricTome {
 
     private void onModConfig(ModConfigEvent event) {
         EccentricConfig.ALIAS_MAP.clear();
-        for (var alias : EccentricConfig.ALIASES.get()) {
+        for (var alias : EccentricConfig.getAliases()) {
             var tokens = alias.split("=");
             EccentricConfig.ALIAS_MAP.put(tokens[0], tokens[1]);
         }
@@ -138,7 +138,7 @@ public class EccentricTome {
         event.modifyMatching(item -> {
             ResourceLocation itemKey = BuiltInRegistries.ITEM.getKey(item);
             String namespace = itemKey.getNamespace();
-            return namespace.equals(ModName.PATCHOULI) || namespace.equals("modonomicon") || EccentricConfig.ITEMS.get().contains(item.toString());
+            return namespace.equals(ModName.PATCHOULI) || namespace.equals("modonomicon") || EccentricConfig.getWhitelistedItems().contains(item.toString());
         }, builder -> builder
                 .set(EccentricDataComponents.MOD_LIST.get(), ModListComponent.EMPTY)
                 .set(EccentricDataComponents.IS_TOME.get(), false)

@@ -1,12 +1,19 @@
 package website.eccentric.tome;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import net.minecraft.resources.ResourceLocation;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
+@EventBusSubscriber(modid = EccentricTome.ID, bus = EventBusSubscriber.Bus.MOD)
 public class EccentricConfig {
     public static final ModConfigSpec.BooleanValue DISABLE_OVERLAY;
     public static final ModConfigSpec.ConfigValue<List<? extends String>> ITEMS;
@@ -14,7 +21,14 @@ public class EccentricConfig {
 
     public static final HashMap<String, String> ALIAS_MAP = new HashMap<>();
 
+    private static final List<String> allItems = new ArrayList<>();
+    private static final List<String> allAliases = new ArrayList<>();
+
     public static final ModConfigSpec SPEC;
+
+    private static final String GITHUB_BASE_URL = "https://raw.githubusercontent.com/Porting-Dead-Mods/EccentricTome-Updated/refs/heads/main/configs/";
+    private static final String ITEMS_FILENAME = "items.txt";
+    private static final String ALIASES_FILENAME = "aliases.txt";
 
     static {
         var BUILDER = new ModConfigSpec.Builder()
@@ -26,29 +40,23 @@ public class EccentricConfig {
                 .define("disable_overlay", false);
 
         ITEMS = BUILDER
-                .comment("Whitelisted items").defineListAllowEmpty(
+                .comment("Whitelisted items")
+                .defineListAllowEmpty(
                         List.of("items"),
                         () -> List.of(
-                                "paganbless:pagan_guide",
-                                "nautec:nautec_guide",
-                                "immersiveengineering:manual",
-                                "tconstruct:materials_and_you",
-                                "tconstruct:puny_smelting",
-                                "tconstruct:mighty_smelting",
-                                "tconstruct:fantastic_foundry",
-                                "tconstruct:tinkers_gadgetry",
-                                "integrateddynamics:on_the_dynamics_of_integration",
-                                "evilcraft:origins_of_darkness",
-                                "cookingforblockheads:no_filter_edition",
-                                "alexsmobs:animal_dictionary",
-                                "occultism:dictionary_of_spirits",
-                                "theoneprobe:probenote",
-                                "compactmachines:personal_shrinking_device",
-                                "draconicevolution:info_tablet",
-                                "iceandfire:bestiary",
-                                "rootsclassic:runic_tablet",
-                                "enigmaticlegacy:the_acknowledgment",
-                                "ad_astra:astrodux"),
+                                "actuallyadditions:booklet", "ad_astra:astrodux", "ae2:guide", "alexsmobs:animal_dictionary",
+                                "ars_nouveau:worn_notebook", "compactmachines:personal_shrinking_device",
+                                "cookingforblockheads:no_filter_edition", "draconicevolution:info_tablet",
+                                "enigmaticlegacy:the_acknowledgment", "eternal_starlight:book", "evilcraft:origins_of_darkness",
+                                "iceandfire:bestiary", "immersiveengineering:manual",
+                                "integrateddynamics:on_the_dynamics_of_integration", "merrymaking:merrymanual",
+                                "nautec:nautec_guide", "occultism:dictionary_of_spirits", "paganbless:pagan_guide",
+                                "powah:book", "rootsclassic:runic_tablet", "securitycraft:sc_manual",
+                                "tconstruct:fantastic_foundry", "tconstruct:materials_and_you",
+                                "tconstruct:mighty_smelting", "tconstruct:puny_smelting", "tconstruct:tinkers_gadgetry",
+                                "theoneprobe:probenote", "fargostalismans:guide_book", "solonion:food_book",
+                                "rftoolsbase:manual", "modern_industrialization:guidebook"
+                        ),
                         () -> "",
                         Validator::isStringResource
                 );
@@ -71,13 +79,75 @@ public class EccentricConfig {
                                 "rftoolspower=rftoolsbase",
                                 "deepresonance=rftoolsbase",
                                 "xnet=rftoolsbase",
-                                "mysticalaggraditions=mysticalagriculture"),
+                                "mysticalaggraditions=mysticalagriculture"
+                        ),
                         () -> "",
                         Validator::isStringAlias);
 
         BUILDER.pop();
 
         SPEC = BUILDER.build();
+    }
+
+    public static List<String> getWhitelistedItems() {
+        return allItems;
+    }
+
+    public static List<String> getAliases() {
+        return allAliases;
+    }
+
+    public static List<String> downloadListFromGithub(String filename) {
+        String githubUrl = GITHUB_BASE_URL + filename;
+        List<String> downloadedList = new ArrayList<>();
+
+        try {
+            URL url = new URL(githubUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+
+            if (connection.getResponseCode() == 200) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (!line.isBlank() && !line.startsWith("#")) {
+                            downloadedList.add(line.trim());
+                        }
+                    }
+                }
+                EccentricTome.LOGGER.info("Successfully downloaded {} entries from {}", downloadedList.size(), filename);
+            } else {
+                EccentricTome.LOGGER.error("Failed to download {}. HTTP code: {}", filename, connection.getResponseCode());
+            }
+        } catch (Exception e) {
+            EccentricTome.LOGGER.error("Error downloading {}: {}", filename, e.getMessage());
+        }
+
+        return downloadedList;
+    }
+
+    @SubscribeEvent
+    public static void onLoad(final ModConfigEvent event) {
+        allItems.clear();
+        allAliases.clear();
+        ALIAS_MAP.clear();
+
+        List<String> downloadedItems = downloadListFromGithub(ITEMS_FILENAME);
+        allItems.addAll(ITEMS.get());
+        allItems.addAll(downloadedItems);
+
+        List<String> downloadedAliases = downloadListFromGithub(ALIASES_FILENAME);
+        allAliases.addAll(ALIASES.get());
+        allAliases.addAll(downloadedAliases);
+
+        for (String alias : allAliases) {
+            String[] parts = alias.split("=");
+            if (parts.length == 2) {
+                ALIAS_MAP.put(parts[0], parts[1]);
+            }
+        }
+
+        EccentricTome.LOGGER.info("Loaded {} items and {} aliases", allItems.size(), ALIAS_MAP.size());
     }
 
     public static class Validator {
