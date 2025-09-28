@@ -26,7 +26,7 @@ public class TomeUtils {
         books.removeIf(b -> BuiltInRegistries.ITEM.getKey(b.getItem()).equals(registry));
 
         EccentricTome.LOGGER.debug("MODSBOOKS: {}", modsBooks);
-        setModsBooks(book, modsBooks);
+        setModsBooks(tome, modsBooks);
         //Migration.setVersion(book);
 
         book.set(EccentricDataComponents.IS_TOME, true);
