@@ -12,6 +12,7 @@ import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
+import website.eccentric.tome.core.TomeManager;
 
 public class AttachmentRecipe extends CustomRecipe {
     public AttachmentRecipe(CraftingBookCategory category) {
@@ -20,7 +21,6 @@ public class AttachmentRecipe extends CustomRecipe {
 
     @Override
     public boolean matches(CraftingInput crafting, Level level) {
-        EccentricTome.LOGGER.debug("Matching");
         var foundTome = false;
         var foundTarget = false;
 
@@ -64,9 +64,7 @@ public class AttachmentRecipe extends CustomRecipe {
                 target = stack;
         }
 
-        tome = tome.copy();
-
-        return TomeUtils.attach(tome, target);
+        return TomeManager.addBookToTome(tome.copy(), target);
     }
 
     @Override

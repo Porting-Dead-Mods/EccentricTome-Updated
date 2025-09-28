@@ -18,14 +18,13 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
-import website.eccentric.tome.network.ConvertPayload;
+import website.eccentric.tome.core.TomeData;
+import website.eccentric.tome.network.SelectBookPacket;
 
 public class TomeItem extends Item {
     public TomeItem() {
         super(new Properties().stacksTo(1)
-                .component(EccentricDataComponents.MOD_LIST, ModListComponent.EMPTY)
-                .component(EccentricDataComponents.IS_TOME, false)
-                .component(EccentricDataComponents.VERSION, 0));
+                .component(EccentricDataComponents.TOME_DATA, TomeData.EMPTY));
     }
 
     @Override
@@ -34,21 +33,18 @@ public class TomeItem extends Item {
         if (player == null)
             return InteractionResult.PASS;
 
-        var hand = context.getHand();
-        var position = context.getClickedPos();
         var tome = context.getItemInHand();
-        var mod = ModName.from(context.getLevel().getBlockState(position));
-        var modsBooks = TomeUtils.getModsBooks(tome).modList();
-
-        if (!player.isShiftKeyDown() || !modsBooks.containsKey(mod))
+        var mod = ModName.from(context.getLevel().getBlockState(context.getClickedPos()));
+        
+        TomeData data = tome.getOrDefault(EccentricDataComponents.TOME_DATA.get(), TomeData.EMPTY);
+        
+        if (!player.isShiftKeyDown() || !data.books().containsKey(mod))
             return InteractionResult.PASS;
 
-        List<ItemStack> books = modsBooks.get(mod);
+        var books = data.books().get(mod);
         if (!books.isEmpty() && context.getLevel().isClientSide) {
-            var book = books.getLast();
-
-            PacketDistributor.sendToServer(new ConvertPayload(book));
-            return InteractionResult.FAIL;
+            PacketDistributor.sendToServer(new SelectBookPacket(mod, 0));
+            return InteractionResult.SUCCESS;
         }
 
         return InteractionResult.SUCCESS;
@@ -67,13 +63,12 @@ public class TomeItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack tome, @Nullable TooltipContext context, List<Component> tooltip, TooltipFlag advanced) {
-        var modsBooks = TomeUtils.getModsBooks(tome).modList();
+        TomeData data = tome.getOrDefault(EccentricDataComponents.TOME_DATA.get(), TomeData.EMPTY);
 
-        for (var mod : modsBooks.keySet()) {
-            tooltip.add(Component.literal(ModName.name(mod)));
-            var books = modsBooks.get(mod);
-
-            for (var book : books) {
+        for (var entry : data.books().entrySet()) {
+            tooltip.add(Component.literal(ModName.name(entry.getKey())));
+            
+            for (var book : entry.getValue()) {
                 if (book.is(Items.AIR))
                     continue;
                 var name = book.getHoverName().getString();

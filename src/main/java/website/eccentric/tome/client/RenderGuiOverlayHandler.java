@@ -14,10 +14,12 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.world.phys.BlockHitResult;
+import website.eccentric.tome.EccentricDataComponents;
 import website.eccentric.tome.EccentricTome;
-import website.eccentric.tome.TomeUtils;
-import website.eccentric.tome.TomeItem;
 import website.eccentric.tome.ModName;
+import website.eccentric.tome.TomeItem;
+import website.eccentric.tome.core.TomeData;
+import website.eccentric.tome.core.TomeManager;
 
 @EventBusSubscriber(modid = EccentricTome.ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public class RenderGuiOverlayHandler {
@@ -39,7 +41,7 @@ public class RenderGuiOverlayHandler {
 
 		var blockHit = (BlockHitResult) hit;
 
-		var hand = TomeUtils.inHand(minecraft.player);
+		var hand = TomeManager.getTomeHand(player);
 		if (hand == null)
 			return;
 
@@ -48,15 +50,16 @@ public class RenderGuiOverlayHandler {
 			return;
 
 		var tome = player.getItemInHand(hand);
-		if (!(tome.getItem() instanceof TomeItem))
+		if (!TomeManager.isTome(tome))
 			return;
 
 		var mod = ModName.from(state);
-		var modsBooks = TomeUtils.getModsBooks(tome).modList();
-		if (!modsBooks.containsKey(mod))
+		var data = tome.getOrDefault(EccentricDataComponents.TOME_DATA.get(), TomeData.EMPTY);
+		
+		if (!data.books().containsKey(mod))
 			return;
 
-		var books = modsBooks.get(mod);
+		var books = data.books().get(mod);
 		if (books.isEmpty())
 			return;
 

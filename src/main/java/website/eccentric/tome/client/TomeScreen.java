@@ -16,16 +16,18 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
+import website.eccentric.tome.EccentricDataComponents;
 import website.eccentric.tome.EccentricTome;
-import website.eccentric.tome.TomeUtils;
-import website.eccentric.tome.network.ConvertPayload;
+import website.eccentric.tome.ModName;
+import website.eccentric.tome.core.TomeData;
+import website.eccentric.tome.network.SelectBookPacket;
 
 public class TomeScreen extends Screen {
     private static final int LEFT_CLICK = 0;
 
     private final ItemStack tome;
-
-    private ItemStack book;
+    private String selectedMod;
+    private int selectedIndex;
 
     public TomeScreen(ItemStack tome) {
         super(Component.empty());
@@ -34,10 +36,10 @@ public class TomeScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double x, double y, int button) {
-        if (button != LEFT_CLICK || book == null)
+        if (button != LEFT_CLICK || selectedMod == null)
             return super.mouseClicked(x, y, button);
 
-        PacketDistributor.sendToServer(new ConvertPayload(book));
+        PacketDistributor.sendToServer(new SelectBookPacket(selectedMod, selectedIndex));
 
         this.onClose();
         return true;
@@ -70,7 +72,8 @@ public class TomeScreen extends Screen {
 
         super.render(gui, mouseX, mouseY, ticks);
 
-        var books = TomeUtils.getModsBooks(tome).modList().values().stream()
+        TomeData data = tome.getOrDefault(EccentricDataComponents.TOME_DATA.get(), TomeData.EMPTY);
+        var books = data.books().values().stream()
                 .flatMap(Collection::stream)
                 .toList();
 
@@ -85,25 +88,32 @@ public class TomeScreen extends Screen {
                 startX + iconSize * booksPerRow + padding,
                 startY + iconSize * rows + padding, 0x22000000);
 
-        this.book = null;
-        var index = 0;
-        for (var book : books) {
-            if (book.is(Items.AIR))
-                continue;
+        this.selectedMod = null;
+        this.selectedIndex = -1;
+        
+        var displayIndex = 0;
+        for (var entry : data.books().entrySet()) {
+            var modId = entry.getKey();
+            var modBooks = entry.getValue();
+            
+            for (var bookIndex = 0; bookIndex < modBooks.size(); bookIndex++) {
+                var book = modBooks.get(bookIndex);
+                if (book.is(Items.AIR))
+                    continue;
 
-            var stackX = startX + (index % booksPerRow) * iconSize;
-            var stackY = startY + (index / booksPerRow) * iconSize;
+                var stackX = startX + (displayIndex % booksPerRow) * iconSize;
+                var stackY = startY + (displayIndex / booksPerRow) * iconSize;
 
-            if (mouseX > stackX && mouseY > stackY && mouseX <= (stackX + 16) && mouseY <= (stackY + 16)) {
-                this.book = book;
+                if (mouseX > stackX && mouseY > stackY && mouseX <= (stackX + 16) && mouseY <= (stackY + 16)) {
+                    this.selectedMod = modId;
+                    this.selectedIndex = bookIndex;
+                    gui.renderComponentTooltip(this.font, getTooltipFromItem(minecraft, book), mouseX, mouseY);
+                }
+                
+                gui.renderItem(book, stackX, stackY);
+                gui.renderItemDecorations(font, book, mouseX, mouseY);
+                displayIndex++;
             }
-            gui.renderItem(book, stackX, stackY);
-            gui.renderItemDecorations(font, book, mouseX, mouseY);
-            index++;
-        }
-
-        if (this.book != null) {
-            gui.renderComponentTooltip(this.font, getTooltipFromItem(minecraft, this.book), mouseX, mouseY);
         }
     }
 

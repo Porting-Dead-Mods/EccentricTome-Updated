@@ -15,7 +15,6 @@ import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
-import net.neoforged.neoforge.event.ModifyDefaultComponentsEvent;
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -29,7 +28,8 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
-import website.eccentric.tome.network.RevertPayload;
+import website.eccentric.tome.core.TomeManager;
+import website.eccentric.tome.network.RevertToTomePacket;
 
 import java.util.function.Supplier;
 
@@ -54,18 +54,14 @@ public class EccentricTome {
         modEvent.addListener(this::onClientSetup);
         modEvent.addListener(this::onModConfig);
         modEvent.addListener(this::onBuildCreativeModeTabContents);
-        modEvent.addListener(this::modifyDefaultComponents);
         container.registerConfig(ModConfig.Type.COMMON, EccentricConfig.SPEC);
 
         var minecraftEvent = NeoForge.EVENT_BUS;
         minecraftEvent.addListener(EventPriority.LOW, this::onItemDropped);
-        minecraftEvent.addListener(this::onRightClickTomeItem);
-        minecraftEvent.addListener(this::onRightClickTomeOnBlock);
+        minecraftEvent.addListener(this::onLeftClickEmpty);
     }
 
     private void onClientSetup(final FMLClientSetupEvent event) {
-        var minecraftEvent = NeoForge.EVENT_BUS;
-        minecraftEvent.addListener(this::onLeftClickEmpty);
     }
 
     private void onModConfig(ModConfigEvent event) {
@@ -78,35 +74,9 @@ public class EccentricTome {
 
     private void onLeftClickEmpty(PlayerInteractEvent.LeftClickEmpty event) {
         var stack = event.getItemStack();
-        if (TomeUtils.isTome(stack) && !(stack.getItem() instanceof TomeItem)) {
-            PacketDistributor.sendToServer(new RevertPayload());
+        if (TomeManager.isActiveBook(stack)) {
+            PacketDistributor.sendToServer(RevertToTomePacket.INSTANCE);
         }
-    }
-
-    private void onRightClickTomeItem(PlayerInteractEvent.RightClickItem event) {
-        event.setCanceled(onRightClickTome(event));
-    }
-
-    private void onRightClickTomeOnBlock(PlayerInteractEvent.RightClickBlock event) {
-        event.setCanceled(onRightClickTome(event));
-    }
-
-    private static boolean onRightClickTome(PlayerInteractEvent event) {
-        var stack = event.getItemStack();
-        if (!(stack.getItem() instanceof TomeItem) && stack.getOrDefault(EccentricDataComponents.IS_TOME, false)) {
-            ItemStack prevStack = stack.copy();
-            Player player = event.getEntity();
-            InteractionHand hand = event.getHand();
-            stack.use(event.getLevel(), player, hand);
-            if (player.getMainHandItem().isEmpty()) {
-                ModListComponent component = TomeUtils.remove(prevStack, stack);
-                ItemStack newStack = EccentricTome.TOME.toStack();
-                newStack.set(EccentricDataComponents.MOD_LIST, component);
-                player.setItemInHand(hand, newStack);
-            }
-            return true;
-        }
-        return false;
     }
 
     private void onItemDropped(ItemTossEvent event) {
@@ -115,16 +85,19 @@ public class EccentricTome {
 
         var entity = event.getEntity();
         var stack = entity.getItem();
-
-        if (TomeUtils.isTome(stack) && !(stack.getItem() instanceof TomeItem)) {
-            var detatchment = TomeUtils.revert(stack);
+        
+        if (TomeManager.isActiveBook(stack)) {
             var level = entity.getCommandSenderWorld();
-
+            
             if (!level.isClientSide) {
-                level.addFreshEntity(new ItemEntity(level, entity.getX(), entity.getY(), entity.getZ(), detatchment));
+                ItemStack extractedBook = TomeManager.extractBook(stack, false);
+                ItemStack tome = TomeManager.extractBook(stack, true);
+                
+                if (!extractedBook.isEmpty() && !tome.isEmpty()) {
+                    entity.setItem(extractedBook);
+                    level.addFreshEntity(new ItemEntity(level, entity.getX(), entity.getY(), entity.getZ(), tome));
+                }
             }
-
-            entity.setItem(stack);
         }
     }
 
@@ -132,16 +105,5 @@ public class EccentricTome {
         if (event.getTabKey().equals(CreativeModeTabs.TOOLS_AND_UTILITIES)) {
             event.accept(TOME);
         }
-    }
-
-    private void modifyDefaultComponents(ModifyDefaultComponentsEvent event) {
-        event.modifyMatching(item -> {
-            ResourceLocation itemKey = BuiltInRegistries.ITEM.getKey(item);
-            String namespace = itemKey.getNamespace();
-            return namespace.equals(ModName.PATCHOULI) || namespace.equals("modonomicon") || EccentricConfig.getWhitelistedItems().contains(item.toString());
-        }, builder -> builder
-                .set(EccentricDataComponents.MOD_LIST.get(), ModListComponent.EMPTY)
-                .set(EccentricDataComponents.IS_TOME.get(), false)
-                .set(EccentricDataComponents.VERSION.get(), 0));
     }
 }
